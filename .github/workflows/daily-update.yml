@@ -1,0 +1,63 @@
+name: Daily rates refresh
+
+# Free for public repos. Treasury publishes the par curve after the US close,
+# so this runs once each weekday evening (UTC) and redeploys Pages with the
+# refreshed JSON. The pipeline is incremental: it refetches only the current
+# and prior year from Treasury and merges FRED series into the archive, so
+# the ICE BofA spread history keeps growing past FRED's three-year window.
+on:
+  schedule:
+    - cron: "30 23 * * 1-5"   # 23:30 UTC, Mon–Fri
+  workflow_dispatch: {}
+
+# Queue rather than cancel so two runs never race to `git push`.
+concurrency:
+  group: daily-update
+  cancel-in-progress: false
+
+permissions:
+  contents: write          # commit the refreshed JSON
+  pages: write             # deploy the refreshed site
+  id-token: write          # Pages deployment
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync with latest main
+        run: git pull --rebase origin main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Standard library only — no pip install step.
+      - name: Run pipeline
+        # Exit code 2 means one source failed and archived data was kept for
+        # it; still commit and deploy what did refresh, and let the flagged
+        # step surface the failure in the Actions log.
+        continue-on-error: true
+        run: python pipeline/run.py
+
+      - name: Commit refreshed data
+        run: |
+          git config user.name "tenor-bot"
+          git config user.email "actions@github.com"
+          git add site/data
+          git diff --staged --quiet || git commit -m "chore: daily rates refresh [skip ci]"
+          git push
+
+      # A GITHUB_TOKEN push does not trigger pages.yml, so deploy here too.
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

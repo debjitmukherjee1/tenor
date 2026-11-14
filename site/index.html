@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-019N8X8CC8"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-019N8X8CC8');
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tenor — The Rates Desk, One Page</title>
+  <meta name="description" content="The US Treasury yield curve, curve spreads and inversion history, implied forwards, real yields, breakevens and credit spreads — refreshed daily from Treasury and FRED, free, no server." />
+  <meta property="og:title" content="Tenor — The Rates Desk, One Page" />
+  <meta property="og:description" content="Treasury curve, 2s10s and 3m10y inversion history, implied forwards, real yields and credit spreads. Refreshed daily from public data." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://debjitmukherjee1.github.io/tenor/" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Tenor — The Rates Desk, One Page" />
+  <meta name="twitter:description" content="Treasury curve, inversion history, forwards, real yields and credit spreads, refreshed daily." />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300..500&family=Geist:wght@300..600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/suite.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <script src="vendor/chart.umd.min.js"></script>
+  <script src="js/suite-charts.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="monogram" viewBox="0 0 48 48" width="46" height="46" aria-hidden="true">
+        <circle cx="24" cy="24" r="22" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.5" />
+        <path d="M11 32C15 24 19 20 24 18.5S33 17 37 16.5" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" />
+        <circle cx="11" cy="32" r="2.2" fill="var(--accent)" />
+        <circle cx="24" cy="18.5" r="2.2" fill="var(--accent)" />
+        <circle cx="37" cy="16.5" r="2.2" fill="var(--accent)" />
+      </svg>
+      <div class="brand-text">
+        <h1>Ten<span>or</span></h1>
+        <p class="tagline">The rates desk on one page — the curve, its spreads, real yields and credit.</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="updated">Curve as of <span id="updated-at">—</span></div>
+      <div class="run-note">daily via <code>GitHub Actions</code> · no server</div>
+    </div>
+  </header>
+
+  <div class="disclaimer-banner">
+    <strong>Personal, educational tool — not investment advice, not a solicitation, not SEBI-registered research.</strong> Public data, shown as published; verify against the source before relying on a number.
+  </div>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <span class="tab-indicator" id="tab-indicator"></span>
+    <button class="tab active" data-tab="curve" role="tab" aria-selected="true" aria-controls="curve">Curve</button>
+    <button class="tab" data-tab="spreads" role="tab" aria-selected="false" aria-controls="spreads">Inversions</button>
+    <button class="tab" data-tab="real" role="tab" aria-selected="false" aria-controls="real">Real rates</button>
+    <button class="tab" data-tab="credit" role="tab" aria-selected="false" aria-controls="credit">Credit</button>
+    <button class="tab" data-tab="method" role="tab" aria-selected="false" aria-controls="method">Method</button>
+  </nav>
+
+  <main>
+    <div id="load-state" class="empty">Loading the curve…</div>
+
+    <!-- ============================ CURVE ============================ -->
+    <section id="curve" class="panel active" role="tabpanel">
+      <h2>The curve, today</h2>
+      <hr class="rule" />
+      <p class="lede">US Treasury par yields from one month to thirty years, as published by the Treasury each business day. Overlay past curves, or drag the timeline to replay any day since 2000.</p>
+
+      <div class="kpis" id="curve-kpis"></div>
+
+      <div class="chart-block">
+        <div class="chart-head">
+          <div>
+            <div class="chart-title">Par yield curve</div>
+            <p class="chart-sub" id="curve-date-label">—</p>
+          </div>
+          <div class="seg" id="overlay-toggle" role="group" aria-label="Compare with">
+            <button data-ago="5" aria-pressed="false">1W ago</button>
+            <button data-ago="21" aria-pressed="true" class="active">1M ago</button>
+            <button data-ago="252" aria-pressed="true" class="active">1Y ago</button>
+            <button data-ago="1260" aria-pressed="false">5Y ago</button>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="curve-chart" aria-label="Yield curve chart" role="img"></canvas></div>
+        <div class="scrubber">
+          <button class="btn-outline btn-sm play" id="play-btn" aria-label="Replay the curve through time">
+            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path id="play-icon" d="M2 1l9 5-9 5z" fill="currentColor"/></svg>
+            <span id="play-label">Replay</span>
+          </button>
+          <input type="range" id="date-slider" min="0" max="0" value="0" step="1" aria-label="Curve date" />
+          <button class="btn-outline btn-sm" id="today-btn">Latest</button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="chart-block">
+          <div class="chart-head"><div class="chart-title">Moves by tenor</div><span class="chart-sub">basis points</span></div>
+          <div class="table-scroll"><table class="data" id="moves-table"></table></div>
+        </div>
+        <div class="chart-block">
+          <div class="chart-head"><div class="chart-title">Implied forwards</div><span class="chart-sub">from the selected curve</span></div>
+          <div class="table-scroll"><table class="data" id="fwd-table"></table></div>
+          <p class="muted small fine">Forward rate between two maturities, treating par yields as annual zero rates — a close approximation away from steep curves. 5y5y is the rate the market implies for the five years starting five years from now.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ INVERSIONS ============================ -->
+    <section id="spreads" class="panel" role="tabpanel">
+      <h2>Slope and inversions</h2>
+      <hr class="rule" />
+      <p class="lede">The 10-year minus 2-year and 10-year minus 3-month spreads. Below zero, short rates sit above long ones — the curve is inverted, which has preceded most US recessions, with long and variable lags.</p>
+
+      <div class="kpis" id="spread-kpis"></div>
+
+      <div class="chart-block">
+        <div class="chart-head">
+          <div class="chart-title">Curve slope</div>
+          <div class="range-toggle" id="spread-range" role="group" aria-label="Range">
+            <button data-range="1Y">1Y</button><button data-range="3Y">3Y</button><button data-range="5Y">5Y</button><button data-range="10Y" class="active">10Y</button><button data-range="MAX">Max</button>
+          </div>
+        </div>
+        <div class="legend-row"><span><i style="background:var(--s1)"></i>10Y − 2Y</span><span><i style="background:var(--s2)"></i>10Y − 3M</span><span><i style="background:rgba(255,106,74,.6)"></i>inverted</span></div>
+        <div class="chart-wrap chart-wrap--tall section-gap"><canvas id="spread-chart" role="img" aria-label="Curve slope chart"></canvas></div>
+      </div>
+
+      <div class="chart-block">
+        <div class="chart-head">
+          <div><div class="chart-title">Inversion episodes</div><p class="chart-sub">10Y − 3M, runs of 10+ sessions below zero since 2000</p></div>
+        </div>
+        <div class="table-scroll"><table class="data" id="episodes-table"></table></div>
+      </div>
+    </section>
+
+    <!-- ============================ REAL ============================ -->
+    <section id="real" class="panel" role="tabpanel">
+      <h2>Real yields and policy</h2>
+      <hr class="rule" />
+      <p class="lede">A nominal yield splits into a real yield (TIPS) and breakeven inflation. Beside it: the effective fed funds rate, and how far the 2-year sits from it — a quick read on where the market thinks policy is heading.</p>
+
+      <div class="kpis" id="real-kpis"></div>
+
+      <div class="chart-block">
+        <div class="chart-head">
+          <div class="chart-title">10-year: nominal, real, breakeven</div>
+          <div class="range-toggle" id="real-range" role="group" aria-label="Range">
+            <button data-range="1Y">1Y</button><button data-range="3Y">3Y</button><button data-range="5Y" class="active">5Y</button><button data-range="10Y">10Y</button><button data-range="MAX">Max</button>
+          </div>
+        </div>
+        <div class="legend-row"><span><i style="background:var(--s1)"></i>10Y nominal</span><span><i style="background:var(--s3)"></i>10Y real (TIPS)</span><span><i style="background:var(--s4)"></i>10Y breakeven</span></div>
+        <div class="chart-wrap section-gap"><canvas id="real-chart" role="img" aria-label="Real yields chart"></canvas></div>
+      </div>
+
+      <div class="chart-block">
+        <div class="chart-head"><div class="chart-title">Policy rate and the 2-year</div></div>
+        <div class="legend-row"><span><i style="background:var(--s1)"></i>2Y Treasury</span><span><i style="background:var(--s2)"></i>Effective fed funds</span></div>
+        <div class="chart-wrap chart-wrap--short section-gap"><canvas id="policy-chart" role="img" aria-label="Fed funds and 2-year chart"></canvas></div>
+        <p class="muted small fine">2Y below fed funds usually means the market expects cuts over the next two years; above it, hikes or a higher-for-longer path.</p>
+      </div>
+    </section>
+
+    <!-- ============================ CREDIT ============================ -->
+    <section id="credit" class="panel" role="tabpanel">
+      <h2>Credit spreads</h2>
+      <hr class="rule" />
+      <p class="lede">Option-adjusted spreads over Treasuries for US investment-grade and high-yield corporate bonds — what lenders charge for default risk, and the quickest gauge of risk appetite in the credit market.</p>
+
+      <div class="kpis" id="credit-kpis"></div>
+
+      <div class="chart-block">
+        <div class="chart-head">
+          <div><div class="chart-title">High yield and investment grade OAS</div><p class="chart-sub" id="credit-window">—</p></div>
+        </div>
+        <div class="legend-row"><span><i style="background:var(--s5)"></i>High yield OAS</span><span><i style="background:var(--s3)"></i>Investment grade OAS</span></div>
+        <div class="chart-wrap section-gap"><canvas id="credit-chart" role="img" aria-label="Credit spreads chart"></canvas></div>
+        <p class="muted small fine">FRED publishes the ICE BofA spread indices for a rolling three-year window only. Tenor keeps every day it has already collected, so this history lengthens by one day with each daily run.</p>
+      </div>
+    </section>
+
+    <!-- ============================ METHOD ============================ -->
+    <section id="method" class="panel" role="tabpanel">
+      <h2>Method and sources</h2>
+      <hr class="rule" />
+      <div class="prose">
+        <p class="lede">Tenor is a static page. A scheduled GitHub Actions job pulls public data once each weekday evening, writes one JSON file, and redeploys the site. Nothing runs on a server and no API key is involved.</p>
+        <h3>Sources</h3>
+        <ul>
+          <li><strong>Yield curve</strong> — U.S. Department of the Treasury, Daily Treasury Par Yield Curve Rates (1M to 30Y), one CSV per year since 2000.</li>
+          <li><strong>Real yield and breakeven</strong> — FRED series DFII10 (10Y TIPS) and T10YIE (10Y breakeven inflation).</li>
+          <li><strong>Policy rate</strong> — FRED series DFF, the effective federal funds rate.</li>
+          <li><strong>Credit spreads</strong> — ICE BofA US High Yield (BAMLH0A0HYM2) and US Corporate (BAMLC0A0CM) option-adjusted spreads, via FRED.</li>
+        </ul>
+        <h3>Definitions</h3>
+        <ul>
+          <li><strong>Spreads</strong> are differences of yields, in basis points (1 bp = 0.01%).</li>
+          <li><strong>Curve shape</strong> — inverted when 10Y − 3M is below −10 bp, flat within ±10 bp around zero on 10Y − 2Y, steep above +100 bp, otherwise normal.</li>
+          <li><strong>Inversion episode</strong> — a run of at least ten consecutive sessions with 10Y − 3M below zero; gaps of up to five positive sessions are bridged.</li>
+          <li><strong>Forwards</strong> — f(t₁,t₂) = [(1+y₂)^t₂ / (1+y₁)^t₁]^(1/(t₂−t₁)) − 1, with par yields standing in for zero rates. A true zero curve would need bootstrapping; on a normal curve the difference is a few basis points.</li>
+          <li><strong>Percentile</strong> — share of observed days in the available history with a lower value than today.</li>
+        </ul>
+        <h3>Limits</h3>
+        <ul>
+          <li>Treasury publishes after the close, so the latest curve is the previous business day's during US hours.</li>
+          <li>FRED values are carried forward at most five sessions to line up with Treasury days; older gaps stay blank.</li>
+          <li>Nothing here is a forecast. An inverted curve is a historical regularity, not a timing signal.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Tenor · built by Debjit Mukherjee · <a href="https://github.com/debjitmukherjee1/tenor" target="_blank" rel="noopener">Source on GitHub</a><br>
+    Data: U.S. Treasury and FRED (no key) · Hosting: GitHub Pages · No server, no per-visitor cost.</p>
+    <p class="sibling-links">Also in this suite:
+      <a href="https://debjitmukherjee1.github.io/meridian/" target="_blank" rel="noopener">Meridian</a> ·
+      <a href="https://debjitmukherjee1.github.io/marketpulse/" target="_blank" rel="noopener">MarketPulse</a> ·
+      <a href="https://debjitmukherjee1.github.io/ledger/" target="_blank" rel="noopener">Ledger</a> ·
+      <a href="https://debjitmukherjee1.github.io/abacus/" target="_blank" rel="noopener">Abacus</a> ·
+      <a href="https://debjitmukherjee1.github.io/tenline/" target="_blank" rel="noopener">Tenline</a> ·
+      <a href="https://debjitmukherjee1.github.io/covenant/" target="_blank" rel="noopener">Covenant</a> ·
+      <a href="https://debjitmukherjee1.github.io/redline/" target="_blank" rel="noopener">Redline</a>
+    </p>
+  </footer>
+
+  <script src="js/tabs.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/suite.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+/* Tenor — app-specific layout. */
+.brand h1 { font-weight: 400; letter-spacing: -.02em; text-transform: none; }
+.value--chip { display: flex; align-items: center; min-height: 46px; }
+.value--chip .chip { height: 32px; padding: 0 14px; font-size: 13px; }
+
+.scrubber { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
+.scrubber .btn-outline { height: 36px; padding: 0 14px; font-size: 13px; gap: 8px; cursor: pointer; }
+.scrubber input[type=range] { width: 100%; }
+.play { min-width: 98px; }
+
+.fine { margin: 14px 0 0; font-size: 13px; line-height: 1.6; }
+#load-state { text-align: center; padding: 60px 0; }
+
+@media (max-width: 720px) {
+  .scrubber { grid-template-columns: auto auto; }
+  .scrubber input[type=range] { grid-column: 1 / -1; grid-row: 1; }
+  .scrubber .btn-outline { justify-self: start; }
+  .scrubber #today-btn { justify-self: end; }
+  #overlay-toggle { width: 100%; }
+  #overlay-toggle button { flex: 1 0 auto; padding: 0 10px; }
+}
